@@ -1,0 +1,9 @@
+{
+  "extraPaths": [
+    "py_modules"
+  ],
+  "ignore": [
+    "py_modules/freeze_watchdog_service.py"
+  ],
+  "reportMissingModuleSource": "none"
+}
