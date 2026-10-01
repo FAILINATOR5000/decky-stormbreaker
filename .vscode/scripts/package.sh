@@ -13,6 +13,8 @@ PAYLOAD=(
     plugin.json
     package.json
     LICENSE
+    THIRD-PARTY-LICENSES
+    README.md
     dist
     py_modules
 )

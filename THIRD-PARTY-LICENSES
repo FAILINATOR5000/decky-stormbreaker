@@ -1,0 +1,57 @@
+This project includes third-party components under the following licenses:
+
+-------------------------------------------------------------------
+BSD 3-Clause License
+
+Includes the decky-plugin-template originally developed by Steam Deck Homebrew.
+
+Copyright (c) 2022-2024, Steam Deck Homebrew
+
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its
+   contributors may be used to endorse or promote products derived from
+   this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+-------------------------------------------------------------------
+THIRD-PARTY NOTICES
+
+Font Awesome Free (https://fontawesome.com)
+  Icons licensed under CC BY 4.0
+  https://creativecommons.org/licenses/by/4.0/
+  No Font Awesome CSS, JS, or webfont is distributed with this plugin.
+
+react-icons (https://github.com/react-icons/react-icons)
+  Licensed under the MIT License.
+  Bundled icon sets retain their original licenses; the Font Awesome
+  icons used via react-icons are CC BY 4.0 as noted above.
+
+@decky/ui, @decky/api (https://github.com/SteamDeckHomebrew/decky-frontend-lib)
+  Licensed under LGPL-2.1.
+  https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
+  @decky/ui is loaded from the Decky runtime and is not distributed with
+  this plugin. @decky/api is bundled into dist/index.js. This plugin's own
+  source is published in full under the BSD-3 license in LICENSE, and
+  @decky/api's source is public, so the library can be replaced and the plugin
+  rebuilt.
