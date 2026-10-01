@@ -8,6 +8,7 @@ import {
     saveStormbreaker,
     type Settings
 } from "./api";
+import { updateClaim } from "./claim";
 import { logError } from "./errors";
 import { setStormbreakerEnabled } from "./stormbreaker";
 
@@ -45,6 +46,9 @@ function StormbreakerPanel() {
         setSettings((current) => ({ ...current, [key]: value }));
         if (key === "stormbreaker") {
             setStormbreakerEnabled(value);
+        }
+        if (key === "stormbreaker" || key === "automaticRecovery") {
+            updateClaim(key, value);
         }
     }
 

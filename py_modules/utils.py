@@ -105,3 +105,43 @@ def kill_steamwebhelper() -> int:
             continue
         killed += 1
     return killed
+
+
+WATCHDOG_LOCK = "/tmp/stormbreaker-watchdog.lock"
+WATCHDOG_LOCK_RETRY = 1.0
+
+
+def hold_watchdog_lock(stop_event):
+    try:
+        import fcntl
+    except ImportError:
+        decky.logger.warning("freeze watchdog: no fcntl, running without the watchdog lock")
+        return None
+    try:
+        fd = os.open(WATCHDOG_LOCK, os.O_CREAT | os.O_RDWR, 0o644)
+    except OSError as exc:
+        decky.logger.warning(
+            "freeze watchdog: could not open %s (%s: %s), running without the watchdog lock",
+            WATCHDOG_LOCK,
+            type(exc).__name__,
+            exc,
+        )
+        return None
+    while True:
+        try:
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            return fd
+        except OSError:
+            pass
+        if stop_event.wait(WATCHDOG_LOCK_RETRY):
+            os.close(fd)
+            return None
+
+
+def release_watchdog_lock(fd) -> None:
+    if fd is None:
+        return
+    try:
+        os.close(fd)
+    except OSError:
+        pass

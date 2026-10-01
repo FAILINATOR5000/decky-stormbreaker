@@ -20,7 +20,7 @@ from freeze_capture import (
     webhelper_processes,
     write_capture,
 )
-from utils import kill_steamwebhelper
+from utils import hold_watchdog_lock, kill_steamwebhelper, release_watchdog_lock
 
 CDP_HOST = "127.0.0.1"
 CDP_PORT = 8080
@@ -327,6 +327,13 @@ class _Watch:
         self.service.debug(message, *args)
 
     def run(self) -> None:
+        lock_fd = hold_watchdog_lock(self.stop_event)
+        try:
+            self.watch()
+        finally:
+            release_watchdog_lock(lock_fd)
+
+    def watch(self) -> None:
         failures = 0
         while not self.stop_event.is_set():
             try:

@@ -41,6 +41,9 @@ class Plugin:
     async def get_settings(self):
         return self.settings_store.load_config()
 
+    async def get_plugin_version(self):
+        return str(getattr(decky, "DECKY_PLUGIN_VERSION", ""))
+
     async def save_stormbreaker(self, stormbreaker: bool):
         cfg = self.settings_store.update("stormbreaker", stormbreaker)
 
