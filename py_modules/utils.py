@@ -1,6 +1,7 @@
 import json
 import os
 import pwd
+import signal
 from pathlib import Path
 from typing import Any
 
@@ -85,3 +86,22 @@ def save_json_file(path: Path, payload: Any) -> None:
     tmp.write_text(serialized, encoding="utf-8")
     chown_to_data_owner(tmp)
     tmp.replace(path)
+
+
+def kill_steamwebhelper() -> int:
+    killed = 0
+    for entry in os.listdir("/proc"):
+        if not entry.isdigit():
+            continue
+        try:
+            comm = Path(f"/proc/{entry}/comm").read_text().strip()
+        except OSError:
+            continue
+        if comm != "steamwebhelper":
+            continue
+        try:
+            os.kill(int(entry), signal.SIGKILL)
+        except OSError:
+            continue
+        killed += 1
+    return killed

@@ -5,6 +5,8 @@ from utils import load_json_file, save_json_file
 
 DEFAULTS = {
     "stormbreaker": True,
+    "automaticRecovery": True,
+    "recoveryLogs": False,
 }
 
 
