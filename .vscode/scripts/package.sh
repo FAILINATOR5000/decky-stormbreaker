@@ -14,6 +14,7 @@ PAYLOAD=(
     package.json
     LICENSE
     dist
+    py_modules
 )
 
 VERSION="$(node -p "require('./package.json').version")"
