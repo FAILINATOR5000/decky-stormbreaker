@@ -1,0 +1,18 @@
+target-version = "py311"
+line-length = 120
+
+extend-exclude = ["node_modules", "dist"]
+
+[lint]
+select = [
+    "F",    # pyflakes
+    "E9",   # syntax / IO errors
+    "B",    # bugbear: mutable defaults, raise-without-from, loop-variable capture
+    "ARG",  # unused arguments, catches a signature that drifted from its callers
+    "RUF",  # ruff's own checks, RUF006 (dangling asyncio task) earned its keep
+]
+
+ignore = [
+    "RUF005",  # wants [a, *b] over [a] + b
+    "RUF046",  # wants int(round(x)) unwrapped; the explicit cast reads clearer
+]

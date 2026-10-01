@@ -1,0 +1,20 @@
+{
+  "name": "Stormbreaker",
+  "author": "FAILINATOR5000",
+  "api_version": 1,
+  "flags": [
+    "root"
+  ],
+  "publish": {
+    "tags": [
+      "freeze",
+      "quick access menu",
+      "decky",
+      "plugin",
+      "steam",
+      "deck",
+      "steamos"
+    ],
+    "description": "Prevents and treats a rare SteamOS glitch where the Quick Access Menu (QAM) gets stuck upon opening, leaving controls unresponsive."
+  }
+}
