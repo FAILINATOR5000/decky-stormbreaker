@@ -94,7 +94,7 @@ def kill_steamwebhelper() -> int:
         if not entry.isdigit():
             continue
         try:
-            comm = Path(f"/proc/{entry}/comm").read_text().strip()
+            comm = Path(f"/proc/{entry}/comm").read_text(errors="replace").strip()
         except OSError:
             continue
         if comm != "steamwebhelper":
