@@ -6,7 +6,7 @@ import decky
 from freeze_capture import clear_captures
 from freeze_watchdog_service import FreezeWatchdogService
 from settings_store import SettingsStore
-from utils import chown_to_data_owner, init_data_owner
+from utils import chown_to_data_owner, init_data_owner, set_write_roots
 
 
 class Plugin:
@@ -23,6 +23,7 @@ class Plugin:
 
         init_data_owner(self.settings_dir, self.user_home)
         chown_to_data_owner(self.settings_dir)
+        set_write_roots(self.settings_dir)
 
         self.settings_store = SettingsStore(config_file=self.settings_dir / "settings.json")
         self.freeze_watchdog_service = FreezeWatchdogService(
