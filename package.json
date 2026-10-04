@@ -1,6 +1,6 @@
 {
   "name": "decky-stormbreaker",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "Prevents and treats a rare SteamOS glitch where the Quick Access Menu (QAM) gets stuck upon opening, leaving controls unresponsive.",
   "type": "module",
