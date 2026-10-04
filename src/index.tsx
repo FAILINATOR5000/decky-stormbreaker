@@ -8,12 +8,21 @@ import { logError } from "./errors";
 import { setStormbreakerEnabled, uninstallStormbreaker } from "./stormbreaker";
 
 export default definePlugin(() => {
+    let disposed = false;
     void Promise.all([getSettings(), getPluginVersion()])
         .then(([settings, version]) => {
+            if (disposed) {
+                return;
+            }
             const stormbreaker = Boolean(settings?.stormbreaker ?? true);
             const automaticRecovery = Boolean(settings?.automaticRecovery ?? true);
-            setStormbreakerEnabled(stormbreaker);
             publishClaim(String(version ?? ""), stormbreaker, automaticRecovery);
+            try {
+                setStormbreakerEnabled(stormbreaker);
+            }
+            catch (e) {
+                logError("starting Stormbreaker", e);
+            }
         })
         .catch((e) => logError("loading settings at startup", e));
 
@@ -23,6 +32,7 @@ export default definePlugin(() => {
         content: <StormbreakerPanel />,
         icon: <FaBolt />,
         onDismount() {
+            disposed = true;
             withdrawClaim();
             uninstallStormbreaker();
         }
