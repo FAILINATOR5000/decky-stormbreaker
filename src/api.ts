@@ -6,7 +6,7 @@ export type Settings = {
     recoveryLogs: boolean;
 };
 
-export const getSettings = callable<[], Settings>("get_settings");
+export const getSettings = callable<[], Settings & { gameMode?: boolean }>("get_settings");
 export const getPluginVersion = callable<[], string>("get_plugin_version");
 export const saveStormbreaker = callable<[boolean], { ok: boolean; stormbreaker: boolean }>(
     "save_stormbreaker"

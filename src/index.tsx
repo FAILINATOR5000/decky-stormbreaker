@@ -5,7 +5,7 @@ import { getPluginVersion, getSettings } from "./api";
 import { publishClaim, withdrawClaim } from "./claim";
 import StormbreakerPanel from "./StormbreakerPanel";
 import { logError } from "./errors";
-import { setStormbreakerEnabled, uninstallStormbreaker } from "./stormbreaker";
+import { setStormbreakerEnabled, setStormbreakerGameMode, uninstallStormbreaker } from "./stormbreaker";
 
 export default definePlugin(() => {
     let disposed = false;
@@ -18,6 +18,7 @@ export default definePlugin(() => {
             const automaticRecovery = Boolean(settings?.automaticRecovery ?? true);
             publishClaim(String(version ?? ""), stormbreaker, automaticRecovery);
             try {
+                setStormbreakerGameMode(settings?.gameMode ?? true);
                 setStormbreakerEnabled(stormbreaker);
             }
             catch (e) {
