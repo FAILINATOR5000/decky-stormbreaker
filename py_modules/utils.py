@@ -2,11 +2,17 @@ import json
 import os
 import pwd
 import signal
+import ssl
 import threading
 from pathlib import Path
 from typing import Any
 
 import decky
+
+try:
+    import certifi
+except Exception:
+    certifi = None
 
 
 def load_json_file(path: Path, default: Any) -> Any:
@@ -222,6 +228,15 @@ def write_file_atomic(path, data, *, trusted=None) -> None:
             raise
     finally:
         os.close(dir_fd)
+
+
+def ssl_context() -> ssl.SSLContext:
+    if certifi is not None:
+        try:
+            return ssl.create_default_context(cafile=certifi.where())
+        except OSError:
+            pass
+    return ssl.create_default_context()
 
 
 def save_json_file(path: Path, payload: Any, *, compact: bool = False) -> None:

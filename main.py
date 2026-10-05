@@ -8,7 +8,10 @@ from freeze_incidents_store import INCIDENT_EVENT, FreezeIncidentsStore
 from freeze_watchdog_service import FreezeWatchdogService
 from session_mode_service import SessionModeService
 from settings_store import SettingsStore
-from utils import chown_to_data_owner, init_data_owner, set_write_roots
+from update_checker_service import UpdateCheckerService
+from utils import chown_to_data_owner, init_data_owner, set_write_roots, ssl_context
+
+UPDATE_FOUND_EVENT = "stormbreaker_update_found"
 
 
 class Plugin:
@@ -51,16 +54,24 @@ class Plugin:
             game_mode=self.session_mode_service.is_game_mode,
             incidents=self.freeze_incidents_store,
         )
+        self.update_checker_service = UpdateCheckerService(
+            settings_store=self.settings_store,
+            ssl_context=ssl_context(),
+            on_found=self._emit_update_found,
+            game_mode=self.session_mode_service.is_game_mode,
+        )
 
     async def _main(self):
         self.session_mode_service.start()
         self._asyncio_loop = asyncio.get_running_loop()
         decky.logger.info("Stormbreaker loaded")
         self.freeze_watchdog_service.sync()
+        self.update_checker_service.start()
 
     async def _unload(self):
         self.session_mode_service.stop()
         self.freeze_watchdog_service.stop()
+        self.update_checker_service.stop()
         decky.logger.info("Stormbreaker unloaded")
 
     def _emit_freeze_incident(self) -> None:
@@ -69,9 +80,16 @@ class Plugin:
             return
         asyncio.run_coroutine_threadsafe(decky.emit(INCIDENT_EVENT, {}), loop)
 
+    def _emit_update_found(self, version: str) -> None:
+        loop = self._asyncio_loop
+        if loop is None:
+            return
+        asyncio.run_coroutine_threadsafe(decky.emit(UPDATE_FOUND_EVENT, {"version": version}), loop)
+
     async def get_settings(self):
         response = dict(self.settings_store.load_config())
         response["gameMode"] = self.session_mode_service.refresh(from_frontend=True)
+        self.update_checker_service.frontend_arrived()
         return response
 
     async def get_plugin_version(self):
@@ -130,3 +148,6 @@ class Plugin:
             "entries": snapshot["entries"],
             "standingDown": self.freeze_watchdog_service.standing_down(),
         }
+
+    async def get_update_status(self):
+        return self.update_checker_service.get_status()

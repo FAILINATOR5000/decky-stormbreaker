@@ -87,3 +87,9 @@ export const getFreezeIncidents = callable<
     [],
     { ok: boolean; totals: FreezeIncidentTotals; entries: FreezeIncident[]; standingDown: boolean }
 >("get_freeze_incidents");
+
+export const UPDATE_FOUND_EVENT = "stormbreaker_update_found";
+export const getUpdateStatus = callable<
+    [],
+    { ok: boolean; installedVersion: string; latestVersion: string; updateAvailable: boolean; installUrl: string }
+>("get_update_status");

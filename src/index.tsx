@@ -1,7 +1,7 @@
-import { definePlugin } from "@decky/api";
+import { addEventListener, definePlugin, removeEventListener, toaster } from "@decky/api";
 import { quickAccessMenuClasses } from "@decky/ui";
 import { FaBolt } from "react-icons/fa";
-import { getPluginVersion, getSettings, logStormbreakerEvent, type Settings } from "./api";
+import { getPluginVersion, getSettings, logStormbreakerEvent, UPDATE_FOUND_EVENT, type Settings } from "./api";
 import { publishClaim, withdrawClaim } from "./claim";
 import StormbreakerPanel from "./StormbreakerPanel";
 import { logError } from "./errors";
@@ -59,9 +59,18 @@ async function readAtStartup(isDisposed: () => boolean): Promise<void> {
     );
 }
 
+function onUpdateFound(payload: { version?: unknown } | undefined): void {
+    const version = typeof payload?.version === "string" ? payload.version : "";
+    if (!version) {
+        return;
+    }
+    toaster.toast({ title: "Stormbreaker Update", body: `Version ${version} is out` });
+}
+
 export default definePlugin(() => {
     let disposed = false;
     void readAtStartup(() => disposed).catch((e) => logError("starting at load", e));
+    addEventListener(UPDATE_FOUND_EVENT, onUpdateFound);
 
     return {
         name: "Stormbreaker",
@@ -70,6 +79,7 @@ export default definePlugin(() => {
         icon: <FaBolt />,
         onDismount() {
             disposed = true;
+            removeEventListener(UPDATE_FOUND_EVENT, onUpdateFound);
             withdrawClaim();
             uninstallStormbreaker();
         }

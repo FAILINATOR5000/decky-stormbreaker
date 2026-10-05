@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
     clearRecoveryLogs,
     getSettings,
+    getUpdateStatus,
     saveAutomaticRecovery,
     saveRecoveryLogs,
     saveStormbreaker,
@@ -10,11 +11,12 @@ import {
     type Settings
 } from "./api";
 import { updateClaim } from "./claim";
+import { copyTextToClipboard } from "./clipboard";
 import { logError } from "./errors";
 import { IncidentCard } from "./IncidentCard";
 import { ProtectionStatus, protectionLevel } from "./ProtectionStatus";
 import { setStormbreakerEnabled } from "./stormbreaker";
-import { bodyTextStyle } from "./style";
+import { achievementGreen, bodyTextStyle } from "./style";
 import { SubTabButton } from "./SubTabButton";
 import { toastAfterPress } from "./toast";
 import { useStormbreakerLogController } from "./useStormbreakerLogController";
@@ -34,6 +36,15 @@ const SAVE_CALLS: Record<keyof Settings, (value: boolean) => Promise<Partial<Set
 
 type Tab = "status" | "logs";
 
+type UpdateNotice = {
+    latestVersion: string;
+    installUrl: string;
+};
+
+type CopyResult = "" | "copied" | "copyFailed";
+
+const DIVIDER_STYLE = { height: "1px", background: "rgba(255, 255, 255, 0.2)", margin: "6px 0" };
+
 const TABS: { value: Tab; label: string }[] = [
     { value: "status", label: "Status" },
     { value: "logs", label: "Logs" }
@@ -47,6 +58,9 @@ function StormbreakerPanel() {
     const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
     const [tab, setTab] = useState<Tab>(openTab);
     const log = useStormbreakerLogController();
+    const [update, setUpdate] = useState<UpdateNotice | null>(null);
+    const [copyResult, setCopyResult] = useState<CopyResult>("");
+    const updateBlockRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         getSettings()
@@ -59,6 +73,14 @@ function StormbreakerPanel() {
             })
             .catch((e) => logError("loading settings", e))
             .finally(() => setLoading(false));
+        getUpdateStatus()
+            .then((status) => {
+                if (status?.updateAvailable === true && typeof status.latestVersion === "string"
+                    && typeof status.installUrl === "string" && status.installUrl) {
+                    setUpdate({ latestVersion: status.latestVersion, installUrl: status.installUrl });
+                }
+            })
+            .catch((e) => logError("loading the update status", e));
     }, []);
 
     function applySetting(key: keyof Settings, value: boolean) {
@@ -98,6 +120,13 @@ function StormbreakerPanel() {
         }
     }
 
+    function onCopyInstallLink() {
+        if (!update) {
+            return;
+        }
+        setCopyResult(copyTextToClipboard(update.installUrl, updateBlockRef.current) ? "copied" : "copyFailed");
+    }
+
     function changeTab(next: Tab) {
         openTab = next;
         setTab(next);
@@ -116,6 +145,45 @@ function StormbreakerPanel() {
                 settingsLoaded={!loading}
                 loaded={log.loaded}
             />
+            {update && (
+                <>
+                    <PanelSectionRow>
+                        <div style={DIVIDER_STYLE} />
+                    </PanelSectionRow>
+                    <PanelSectionRow>
+                        <div ref={updateBlockRef} style={{ display: "flex", flexDirection: "column", gap: "6px", padding: "4px 0" }}>
+                            <div style={{ textAlign: "center", color: achievementGreen, fontSize: "15px", fontWeight: 700 }}>
+                                {`Update Available: ${update.latestVersion}`}
+                            </div>
+                            <div style={bodyTextStyle}>
+                                Update by clicking the Stormbreaker updater on desktop, or using the link below.
+                            </div>
+                        </div>
+                    </PanelSectionRow>
+                    <PanelSectionRow>
+                        <ButtonItem
+                            layout="below"
+                            bottomSeparator="none"
+                            description="Paste this link into Decky → Settings → Developer → Install from URL."
+                            onClick={onCopyInstallLink}
+                        >
+                            Copy Install Link
+                        </ButtonItem>
+                    </PanelSectionRow>
+                    {copyResult && (
+                        <PanelSectionRow>
+                            <div style={{ ...bodyTextStyle, padding: "4px 0" }}>
+                                {copyResult === "copied"
+                                    ? "Install link copied."
+                                    : "Couldn't copy the link. Try the desktop updater instead."}
+                            </div>
+                        </PanelSectionRow>
+                    )}
+                    <PanelSectionRow>
+                        <div style={DIVIDER_STYLE} />
+                    </PanelSectionRow>
+                </>
+            )}
             <PanelSectionRow>
                 <ToggleField
                     label="Stormbreaker"
