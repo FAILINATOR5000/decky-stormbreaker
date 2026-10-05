@@ -2,6 +2,7 @@ import json
 import os
 import pwd
 import signal
+import threading
 from pathlib import Path
 from typing import Any
 
@@ -18,6 +19,51 @@ def load_json_file(path: Path, default: Any) -> Any:
             "%s is there but would not read (%s), falling back to defaults",
             path.name, type(e).__name__,
         )
+        return default
+
+
+class NewerSchemaFile(Exception):
+    pass
+
+
+def is_newer_schema(raw: Any, current: int, key: str = "schemaVersion") -> bool:
+    return isinstance(raw, dict) and to_int(raw.get(key, 0), 0) > current
+
+
+_newer_schema_reported: set = set()
+_newer_schema_lock = threading.Lock()
+
+
+def report_newer_schema(path: Path) -> None:
+    with _newer_schema_lock:
+        if str(path) in _newer_schema_reported:
+            return
+        _newer_schema_reported.add(str(path))
+    decky.logger.warning(
+        "%s was saved by a newer Stormbreaker; showing it as empty and leaving it untouched",
+        path,
+    )
+
+
+def refuse_newer_file(path: Path, current: int, key: str = "schemaVersion") -> None:
+    if not path.exists():
+        return
+    if is_newer_schema(load_json_file(path, None), current, key):
+        report_newer_schema(path)
+        raise NewerSchemaFile(str(path))
+
+
+def to_int(value: Any, default: int = 0) -> int:
+    try:
+        return int(value)
+    except (ValueError, TypeError, OverflowError):
+        return default
+
+
+def to_float(value: Any, default: float = 0.0) -> float:
+    try:
+        return float(value)
+    except (ValueError, TypeError, OverflowError):
         return default
 
 
@@ -178,8 +224,11 @@ def write_file_atomic(path, data, *, trusted=None) -> None:
         os.close(dir_fd)
 
 
-def save_json_file(path: Path, payload: Any) -> None:
-    serialized = json.dumps(payload, indent=2)
+def save_json_file(path: Path, payload: Any, *, compact: bool = False) -> None:
+    if compact:
+        serialized = json.dumps(payload, separators=(",", ":"))
+    else:
+        serialized = json.dumps(payload, indent=2)
     ensure_dir(path.parent)
     write_file_atomic(path, serialized)
 

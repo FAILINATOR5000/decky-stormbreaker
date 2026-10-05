@@ -1,4 +1,5 @@
-import { logStormbreakerEvent } from "./api";
+import { Router } from "@decky/ui";
+import { logStormbreakerEvent, recordStormBroken } from "./api";
 import { logError } from "./errors";
 import { quickAccessWindow } from "./quickAccess";
 
@@ -18,6 +19,8 @@ type Breaking = {
     view: QamView;
     hiddenAt: number;
     events: number;
+    count: number;
+    span: number;
 };
 
 const STORM_EVENTS = 30;
@@ -47,6 +50,11 @@ let findTries = 0;
 function report(stage: string, extra: string): void {
     console.log(`[stormbreaker] ${stage} ${extra}`);
     void logStormbreakerEvent(stage, extra).catch(() => { });
+}
+
+function runningGameName(): string {
+    const name = Router?.MainRunningApp?.display_name;
+    return typeof name === "string" ? name : "";
 }
 
 function mainWindowInstance(): any {
@@ -93,7 +101,7 @@ function finishBreak(stopped: boolean): void {
     if (!breaking) {
         return;
     }
-    const { view, hiddenAt, events } = breaking;
+    const { view, hiddenAt, events, count, span } = breaking;
     breaking = null;
     window.clearInterval(checkTimer);
     const now = performance.now();
@@ -113,6 +121,19 @@ function finishBreak(stopped: boolean): void {
         stopped ? "stopped" : "still going",
         `${events} focus changes after hiding, the last ${lastChange}ms in; ${restore ? "view shown again" : "menu closed, view left hidden"}`
     );
+    if (!stopped && now - hiddenAt < GIVE_UP_MS) {
+        return;
+    }
+    void recordStormBroken({
+        changes: count,
+        spanMs: span,
+        afterHiding: events,
+        lastChangeMs: lastChange,
+        endedBy: stopped ? "quiet" : "cap",
+        viewShown: restore,
+        hiddenMs: Math.max(0, Math.round(now - hiddenAt)),
+        game: runningGameName()
+    }).catch(() => { });
 }
 
 function startBreak(now: number): void {
@@ -137,7 +158,7 @@ function startBreak(now: number): void {
         report("storm", `${count} focus changes in ${span}ms, the QAM's view was not found`);
         return;
     }
-    breaking = { view, hiddenAt: now, events: 0 };
+    breaking = { view, hiddenAt: now, events: 0, count, span };
     checkTimer = window.setInterval(() => checkBreak(performance.now()), CHECK_MS);
     report("storm", `${count} focus changes in ${span}ms, view hidden`);
 }

@@ -4,6 +4,7 @@ from pathlib import Path
 import decky
 
 from freeze_capture import clear_captures
+from freeze_incidents_store import INCIDENT_EVENT, FreezeIncidentsStore
 from freeze_watchdog_service import FreezeWatchdogService
 from session_mode_service import SessionModeService
 from settings_store import SettingsStore
@@ -20,13 +21,27 @@ class Plugin:
             )
         )
         self.settings_dir.mkdir(parents=True, exist_ok=True)
+        self.runtime_dir = Path(
+            getattr(
+                decky,
+                "DECKY_PLUGIN_RUNTIME_DIR",
+                "/home/deck/homebrew/data/decky-stormbreaker",
+            )
+        )
+        self.runtime_dir.mkdir(parents=True, exist_ok=True)
         self.user_home = Path(getattr(decky, "DECKY_USER_HOME", "/home/deck"))
 
         init_data_owner(self.settings_dir, self.user_home)
         chown_to_data_owner(self.settings_dir)
-        set_write_roots(self.settings_dir)
+        chown_to_data_owner(self.runtime_dir)
+        set_write_roots(self.settings_dir, self.runtime_dir)
+        self._asyncio_loop = None
 
         self.settings_store = SettingsStore(config_file=self.settings_dir / "settings.json")
+        self.freeze_incidents_store = FreezeIncidentsStore(
+            base_dir=self.runtime_dir,
+            on_change=self._emit_freeze_incident,
+        )
         self.session_mode_service = SessionModeService(
             on_change=lambda: self.freeze_watchdog_service.sync(),
         )
@@ -34,10 +49,12 @@ class Plugin:
             settings_store=self.settings_store,
             user_home=self.user_home,
             game_mode=self.session_mode_service.is_game_mode,
+            incidents=self.freeze_incidents_store,
         )
 
     async def _main(self):
         self.session_mode_service.start()
+        self._asyncio_loop = asyncio.get_running_loop()
         decky.logger.info("Stormbreaker loaded")
         self.freeze_watchdog_service.sync()
 
@@ -45,6 +62,12 @@ class Plugin:
         self.session_mode_service.stop()
         self.freeze_watchdog_service.stop()
         decky.logger.info("Stormbreaker unloaded")
+
+    def _emit_freeze_incident(self) -> None:
+        loop = self._asyncio_loop
+        if loop is None:
+            return
+        asyncio.run_coroutine_threadsafe(decky.emit(INCIDENT_EVENT, {}), loop)
 
     async def get_settings(self):
         response = dict(self.settings_store.load_config())
@@ -94,3 +117,16 @@ class Plugin:
         extra_text = str(extra or "").strip()
         decky.logger.info("stormbreaker: %s %s", stage_text, extra_text)
         return {"ok": True}
+
+    async def record_storm_broken(self, record=None):
+        entry_id = self.freeze_incidents_store.add_prevented(record)
+        return {"ok": entry_id is not None}
+
+    async def get_freeze_incidents(self):
+        snapshot = self.freeze_incidents_store.snapshot()
+        return {
+            "ok": True,
+            "totals": snapshot["totals"],
+            "entries": snapshot["entries"],
+            "standingDown": self.freeze_watchdog_service.standing_down(),
+        }
