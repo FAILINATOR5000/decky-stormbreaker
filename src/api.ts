@@ -93,3 +93,6 @@ export const getUpdateStatus = callable<
     [],
     { ok: boolean; installedVersion: string; latestVersion: string; updateAvailable: boolean; installUrl: string }
 >("get_update_status");
+export const placeDesktopUpdater = callable<[], { ok: boolean; path?: string; name?: string; error?: string }>(
+    "place_desktop_updater"
+);

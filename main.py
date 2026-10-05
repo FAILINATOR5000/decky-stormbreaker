@@ -59,6 +59,7 @@ class Plugin:
             ssl_context=ssl_context(),
             on_found=self._emit_update_found,
             game_mode=self.session_mode_service.is_game_mode,
+            user_home=self.user_home,
         )
 
     async def _main(self):
@@ -151,3 +152,6 @@ class Plugin:
 
     async def get_update_status(self):
         return self.update_checker_service.get_status()
+
+    async def place_desktop_updater(self):
+        return self.update_checker_service.place_desktop_launcher()

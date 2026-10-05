@@ -1,9 +1,14 @@
 import json
+import os
+import re
 import threading
 import time
 import urllib.request
+from pathlib import Path
 
 import decky
+
+from utils import write_file_atomic
 
 
 GITHUB_OWNER = "FAILINATOR5000"
@@ -18,6 +23,27 @@ TICK_SECONDS = 15 * 60
 STARTUP_DELAY_SECONDS = 20.0
 
 FETCH_TIMEOUT_SECONDS = 15
+
+UPDATER_SCRIPT_URL = "https://raw.githubusercontent.com/%s/%s/main/update-stormbreaker.sh" % (
+    GITHUB_OWNER,
+    GITHUB_REPO,
+)
+
+LAUNCHER_FILE_NAME = "Update Stormbreaker.desktop"
+
+LAUNCHER_NO_DESKTOP = "no_desktop"
+LAUNCHER_FAILED = "launcher_failed"
+
+LAUNCHER_TEXT = """#!/usr/bin/env xdg-open
+[Desktop Entry]
+Name=Update Stormbreaker
+Comment=Install Stormbreaker, or update it to the latest version
+Exec=sh -c 'rm -f /tmp/update-stormbreaker.sh; if curl -fsL --connect-timeout 60 -o /tmp/update-stormbreaker.sh %s && head -n 1 /tmp/update-stormbreaker.sh | grep -q "^#!"; then bash /tmp/update-stormbreaker.sh; else echo "Could not download the updater. Check your connection and try again."; read -r _; fi'
+Icon=system-software-update
+Terminal=true
+Type=Application
+StartupNotify=false
+""" % UPDATER_SCRIPT_URL
 
 
 class GenerationFence:
@@ -90,13 +116,14 @@ def installed_version():
 
 
 class UpdateCheckerService:
-    def __init__(self, *, settings_store, ssl_context, on_found, game_mode):
+    def __init__(self, *, settings_store, ssl_context, on_found, game_mode, user_home):
         self._settings_store = settings_store
         self._ssl_context = ssl_context
         self._on_found = on_found
         self._game_mode = game_mode
         self._frontend_seen = False
         self._held = False
+        self._user_home = Path(user_home)
         self._thread = None
         self._stop_event = threading.Event()
         self._lifecycle_lock = threading.Lock()
@@ -193,6 +220,43 @@ class UpdateCheckerService:
             "updateAvailable": is_newer_version(tag, current),
             "installUrl": release_install_url(tag),
         }
+
+    def place_desktop_launcher(self):
+        desktop = self._desktop_dir()
+        if desktop is None:
+            decky.logger.error("update: no desktop folder under %s", self._user_home)
+            return {"ok": False, "error": LAUNCHER_NO_DESKTOP}
+
+        path = desktop / LAUNCHER_FILE_NAME
+        try:
+            write_file_atomic(path, LAUNCHER_TEXT, trusted=self._user_home, mode=0o755)
+        except OSError as exc:
+            decky.logger.error("update: couldn't write the updater launcher to %s (%s)", path, exc)
+            return {"ok": False, "error": LAUNCHER_FAILED}
+
+        decky.logger.info("update: updater launcher written to %s", path)
+        return {"ok": True, "path": str(path), "name": path.name}
+
+    def _desktop_dir(self):
+        config = self._user_home / ".config" / "user-dirs.dirs"
+        try:
+            for line in config.read_text(encoding="utf-8", errors="replace").splitlines():
+                match = re.match(r'\s*XDG_DESKTOP_DIR\s*=\s*"(.*)"\s*$', line)
+                if match:
+                    candidate = self._inside_home(Path(match.group(1).replace("$HOME", str(self._user_home))))
+                    if candidate is not None:
+                        return candidate
+        except OSError:
+            pass
+
+        return self._inside_home(self._user_home / "Desktop")
+
+    def _inside_home(self, candidate):
+        home = Path(os.path.realpath(self._user_home))
+        real = Path(os.path.realpath(candidate))
+        if not real.is_relative_to(home) or not real.is_dir():
+            return None
+        return self._user_home / real.relative_to(home)
 
     def _fetch_latest_release(self):
         request = urllib.request.Request(

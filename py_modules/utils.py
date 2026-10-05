@@ -209,7 +209,7 @@ def _unlink_at(name, dir_fd) -> None:
         pass
 
 
-def write_file_atomic(path, data, *, trusted=None) -> None:
+def write_file_atomic(path, data, *, trusted=None, mode=None) -> None:
     if isinstance(data, str):
         data = data.encode("utf-8")
     path = Path(path)
@@ -220,6 +220,8 @@ def write_file_atomic(path, data, *, trusted=None) -> None:
         fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW | os.O_CLOEXEC, 0o666, dir_fd=dir_fd)
         try:
             chown_to_data_owner(fd)
+            if mode is not None:
+                os.fchmod(fd, mode)
             with os.fdopen(fd, "wb") as out:
                 out.write(data)
             os.replace(tmp, path.name, src_dir_fd=dir_fd, dst_dir_fd=dir_fd)

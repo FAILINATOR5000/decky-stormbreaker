@@ -4,6 +4,7 @@ import {
     clearRecoveryLogs,
     getSettings,
     getUpdateStatus,
+    placeDesktopUpdater,
     saveAutomaticRecovery,
     saveRecoveryLogs,
     saveStormbreaker,
@@ -55,6 +56,7 @@ let openTab: Tab = "status";
 function StormbreakerPanel() {
     const [loading, setLoading] = useState(true);
     const [clearing, setClearing] = useState(false);
+    const [placingUpdater, setPlacingUpdater] = useState(false);
     const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
     const [tab, setTab] = useState<Tab>(openTab);
     const log = useStormbreakerLogController();
@@ -127,6 +129,23 @@ function StormbreakerPanel() {
         setCopyResult(copyTextToClipboard(update.installUrl, updateBlockRef.current) ? "copied" : "copyFailed");
     }
 
+    async function onPlaceDesktopUpdater() {
+        setPlacingUpdater(true);
+        try {
+            const placed = await placeDesktopUpdater();
+            toastAfterPress(placed?.ok
+                ? { title: "Stormbreaker Updater Added", body: "On your Desktop now" }
+                : { title: "Updater not added", body: placed?.error === "no_desktop" ? "No Desktop folder" : "Couldn't save it" });
+        }
+        catch (e) {
+            logError("placing the desktop updater", e);
+            toastAfterPress({ title: "Updater not added", body: "Couldn't save it" });
+        }
+        finally {
+            setPlacingUpdater(false);
+        }
+    }
+
     function changeTab(next: Tab) {
         openTab = next;
         setTab(next);
@@ -156,9 +175,19 @@ function StormbreakerPanel() {
                                 {`Update Available: ${update.latestVersion}`}
                             </div>
                             <div style={bodyTextStyle}>
-                                Update by clicking the Stormbreaker updater on desktop, or using the link below.
+                                Update by clicking the Stormbreaker updater on desktop, or using the link below. Be sure to select the button below to add the updater to your desktop.
                             </div>
                         </div>
+                    </PanelSectionRow>
+                    <PanelSectionRow>
+                        <ButtonItem
+                            layout="below"
+                            description="Puts a launcher on your Desktop. Run it from Desktop Mode and it installs the newest version for you."
+                            disabled={placingUpdater}
+                            onClick={() => void onPlaceDesktopUpdater()}
+                        >
+                            {placingUpdater ? "Saving..." : "Add Updater to Desktop"}
+                        </ButtonItem>
                     </PanelSectionRow>
                     <PanelSectionRow>
                         <ButtonItem
