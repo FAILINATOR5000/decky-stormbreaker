@@ -3,8 +3,8 @@ Stormbreaker is a Decky Loader plugin for SteamOS platforms that both prevents a
 ## Table of Contents
 
 - [How It Works](#how-it-works)
-- [Technical Explanation](#technical-explanation)
 - [Features](#features)
+- [Technical Explanation](#technical-explanation)
 - [Requirements](#requirements)
 - [Installation](#installation)
 - [Updating Stormbreaker](#updating-stormbreaker)
@@ -21,6 +21,18 @@ The Quick Access Menu (QAM) is a little window sitting on top of Game Mode. When
 This is where **Stormbreaker** comes in. It watches for that back and forth, and the moment it sees it, it hides the menu's page for a split second. With one side out of the fight it ends almost instantly, usually in under a second, and then the page comes right back. All you see is a blink, and the best part is you don't lose your progress. I've also added a fallback service called "Automatic Recovery". So if Stormbreaker fails, which my current tests show it shouldn't, Automatic Recovery notices Steam's interface has stopped responding and restarts steamwebhelper, giving control back to you. Once you get the control back and the interface resets, your game will still be running in the background safely, where all you have to do is select resume for your game to jump right back in.
 
 All you have to do is install **Stormbreaker** and it protects you globally. It doesn't matter which plugins you are using or which menu you are in when you open the QAM; you will be protected when it does happen. It runs silently in the background and uses nearly no CPU, merely monitoring the QAM as it opens, as well as steamwebhelper to determine if it is unresponsive from a freeze so that it can recover you from it.
+
+## Features
+
+- **Stormbreaker**: Stops a rare SteamOS freeze that can start as the Quick Access Menu opens. When one begins, the menu blinks once and carries on instead of Steam's interface freezing. It only acts during that moment and changes no Steam code.
+
+- **Automatic Recovery**: SteamOS has a known bug where the Quick Access Menu can freeze on screen or get stuck after being opened and closed quickly. Enabling this will turn on the watchdog service which will detect this situation and free you from being stuck—usually 10–15 seconds from the freeze. The Steam interface will be reset without shutting off your game, but it will move you back to the game launch screen where all you have to do is resume it and you are exactly where you left off.
+
+- **Save Recovery Logs**: Saves a record of each recovery to the plugin's log folder, including what Steam's interface was doing when it froze, and writes detailed recovery activity to the plugin log. Useful when reporting a problem. Steam does a little more work while this is on, so leave it off otherwise.
+
+- **Clear Recovery Logs**: Deletes every saved recovery record from the plugin's log folder. Only clears the extended recovery logs. Your other logs (in the logs tab) are rotated at 200 max events.
+
+- **Track Events**: In the logs tab, view QAM freeze events and stats such as if it was prevented or recovered from, as well as focus-related data.
 
 ## Technical Explanation
 
@@ -263,18 +275,6 @@ def kill_steamwebhelper():
 ```
 
 Restarting the Steam UI is a serious event, so there are a few safety mechanisms I've added for it. A freshly restarted interface gets a whole minute to come back up before it can be judged, and waking the device from sleep gets 20 seconds. After a recovery, Steam has to answer every ping for 30 seconds before another auto-recovery is allowed. In addition, if there are four auto-recoveries in 30 minutes, the watchdog stops killing until the plugin reloads, so it can't go into an infinite loop if there is ever a problem it cannot fix. With **Save Recovery Logs** on, it also pauses the Steam UI just before the restart and saves what it was running, checking it against the known freeze (the `OnDeactivate` blur handler above).
-
-## Features
-
-- **Stormbreaker**: Stops a rare SteamOS freeze that can start as the Quick Access Menu opens. When one begins, the menu blinks once and carries on instead of Steam's interface freezing. It only acts during that moment and changes no Steam code.
-
-- **Automatic Recovery**: SteamOS has a known bug where the Quick Access Menu can freeze on screen or get stuck after being opened and closed quickly. Enabling this will turn on the watchdog service which will detect this situation and free you from being stuck—usually 10–15 seconds from the freeze. The Steam interface will be reset without shutting off your game, but it will move you back to the game launch screen where all you have to do is resume it and you are exactly where you left off.
-
-- **Save Recovery Logs**: Saves a record of each recovery to the plugin's log folder, including what Steam's interface was doing when it froze, and writes detailed recovery activity to the plugin log. Useful when reporting a problem. Steam does a little more work while this is on, so leave it off otherwise.
-
-- **Clear Recovery Logs**: Deletes every saved recovery record from the plugin's log folder. Only clears the extended recovery logs. Your other logs (in the logs tab) are rotated at 200 max events.
-
-- **Track Events**: In the logs tab, view QAM freeze events and stats such as if it was prevented or recovered from, as well as focus-related data.
 
 ## Requirements
 
