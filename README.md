@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/images/stormbreaker-qam-freeze-protection.webp" alt="Stormbreaker" width="700"></p>
+
 Stormbreaker is a Decky Loader plugin for SteamOS platforms that both prevents and recovers you from a rare SteamOS bug related to the Quick Access Menu (QAM), where in rare cases upon opening, it gets stuck and becomes unresponsive. While rare, it is devastating as controls also become unresponsive, so usually it results in hard resetting the device, losing game progress in the process.
 
 ## Table of Contents
